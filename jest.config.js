@@ -23,8 +23,9 @@ const config = {
     ],
   },
 
-  // Module name mapping for .ts extensions
+  // Module name mapping for .ts and .js extensions
   moduleNameMapper: {
+    "^(\\.{1,2}/.*)\\.js$": "$1",
     "^(\\.{1,2}/.*)\\.ts$": "$1",
   },
 

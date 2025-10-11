@@ -1,4 +1,4 @@
-import { when, whenSomething } from "./index.ts";
+import { when, whenSomething } from "./index.js";
 
 const trueFunc = () => true;
 const falseFunc = () => false;

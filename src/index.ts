@@ -1,4 +1,4 @@
-import { Comparison } from "./comparison.ts";
+import { Comparison } from "./comparison.js";
 
 export { Comparison };
 
