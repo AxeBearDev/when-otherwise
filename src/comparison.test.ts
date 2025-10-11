@@ -4,6 +4,11 @@ const trueFunc = () => true;
 const falseFunc = () => false;
 
 test("is with functions", () => {
+  expect(
+    when("a")
+      .is((value: any) => value, trueFunc)
+      .otherwise(falseFunc)
+  ).toBe(true);
   expect(when("a").is("a", trueFunc).otherwise(falseFunc)).toBe(true);
   expect(when("a").is("b", trueFunc).otherwise(falseFunc)).toBe(false);
   expect(when(1).is("1", trueFunc).otherwise(falseFunc)).toBe(false);
@@ -76,12 +81,12 @@ test("deferred against", () => {
     .is("a", () => "Value is a")
     .is("b", "Value is b")
     .is(1, "Something is 1")
-    .default("Value is something else");
+    .defaultTo((value) => "Value is " + value);
 
   expect(test.against("a")).toBe("Value is a");
   expect(test.against("b")).toBe("Value is b");
   expect(test.against(1)).toBe("Something is 1");
-  expect(test.against(123)).toBe("Value is something else");
+  expect(test.against(123)).toBe("Value is 123");
 });
 
 test("undefined value", () => {

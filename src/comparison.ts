@@ -1,6 +1,14 @@
-export type ComparisonResult<T> = T | (() => T);
+/**
+ * The type of result that can be returned from a comparison test.
+ * This can be a direct value of type T or a function that takes
+ * the value being compared and returns a value of type T.
+ */
+export type ComparisonResult<T> = T | ((value: any) => T);
 
-export interface ComparisonTest<ResultType> {
+/**
+ * Represents a single comparison test within a Comparison chain.
+ */
+interface ComparisonTest<ResultType> {
   passes: (value: any) => boolean;
   result: ComparisonResult<ResultType>;
 }
@@ -64,55 +72,55 @@ export class Comparison<ResultType> {
 
   isLike(
     comparison: any,
-    result: ComparisonResult<ResultType>,
+    result: ComparisonResult<ResultType>
   ): Comparison<ResultType> {
     return this.#compare(comparison, result, false, false);
   }
 
   is(
     comparison: any,
-    result: ComparisonResult<ResultType>,
+    result: ComparisonResult<ResultType>
   ): Comparison<ResultType> {
     return this.#compare(comparison, result, true, false);
   }
 
   isNot(
     comparison: any,
-    result: ComparisonResult<ResultType>,
+    result: ComparisonResult<ResultType>
   ): Comparison<ResultType> {
     return this.#compare(comparison, result, false, true);
   }
 
   isNotLike(
     comparison: any,
-    result: ComparisonResult<ResultType>,
+    result: ComparisonResult<ResultType>
   ): Comparison<ResultType> {
     return this.#compare(comparison, result, false, true);
   }
 
   whenTrue(
     evaluation: ComparisonResult<boolean>,
-    result: ComparisonResult<ResultType>,
+    result: ComparisonResult<ResultType>
   ): Comparison<ResultType> {
-    const passes = (_value: any) => this.#getValue(evaluation) === true;
+    const passes = (value: any) => this.#getValue(evaluation, value) === true;
     this.tests.push({ passes, result });
     return this;
   }
 
   whenFalse(
     evaluation: ComparisonResult<boolean>,
-    result: ComparisonResult<ResultType>,
+    result: ComparisonResult<ResultType>
   ): Comparison<ResultType> {
-    const passes = (_value: any) => this.#getValue(evaluation) === false;
+    const passes = (value: any) => this.#getValue(evaluation, value) === false;
     this.tests.push({ passes, result });
     return this;
   }
 
-  #getValue(val: any): any {
-    if (typeof val === "function") {
-      return val();
+  #getValue(result: any, value: any): any {
+    if (typeof result === "function") {
+      return result(value);
     }
-    return val;
+    return result;
   }
 
   /**
@@ -127,10 +135,10 @@ export class Comparison<ResultType> {
     comparison: any,
     result: ComparisonResult<ResultType>,
     strict = false,
-    negate = false,
+    negate = false
   ): Comparison<ResultType> {
     const passes = (value: any) => {
-      const comparisonValue = this.#getValue(comparison);
+      const comparisonValue = this.#getValue(comparison, value);
       const isTrue = strict
         ? comparisonValue === value
         : comparisonValue == value;
@@ -147,7 +155,7 @@ export class Comparison<ResultType> {
    * @param result The fallback result.
    * @returns The current Comparison instance.
    */
-  default(result: ComparisonResult<ResultType>): Comparison<ResultType> {
+  defaultTo(result: ComparisonResult<ResultType>): Comparison<ResultType> {
     this.fallback = result;
     return this;
   }
@@ -175,10 +183,10 @@ export class Comparison<ResultType> {
 
     for (const test of this.tests) {
       if (test.passes(value)) {
-        return this.#getValue(test.result);
+        return this.#getValue(test.result, value);
       }
     }
 
-    return this.#getValue(this.fallback);
+    return this.#getValue(this.fallback, value);
   }
 }
