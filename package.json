@@ -9,6 +9,7 @@
     "test": "jest",
     "build": "tsc --build",
     "clean": "rm -rf dist",
+    "prettier": "prettier 'src/**/*.{ts,js,json,md}' --write",
     "prebuild": "npm run clean"
   },
   "keywords": [],
