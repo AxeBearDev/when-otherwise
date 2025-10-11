@@ -5,6 +5,9 @@ pre-push:
 
 pre-commit:
   jobs:
+    - name: build ./dist
+      run: npm run build
+
     - name: prettier
       run: npx prettier {staged_files} --write
       stage_fixed: true
@@ -13,6 +16,3 @@ pre-commit:
         - "*.js"
         - "*.json"
         - "*.md"
-
-    - name: build ./dist
-      run: npm run build
