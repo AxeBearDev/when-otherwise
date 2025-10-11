@@ -7,7 +7,7 @@ test("is with functions", () => {
   expect(
     when("a")
       .is((value: any) => value, trueFunc)
-      .otherwise(falseFunc)
+      .otherwise(falseFunc),
   ).toBe(true);
   expect(when("a").is("a", trueFunc).otherwise(falseFunc)).toBe(true);
   expect(when("a").is("b", trueFunc).otherwise(falseFunc)).toBe(false);

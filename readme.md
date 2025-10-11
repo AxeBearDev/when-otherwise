@@ -58,11 +58,11 @@ const lastName = get("lastName");
 const result = when()
   .is(
     () => firstName.startsWith("A"),
-    () => "First name starts with A"
+    () => "First name starts with A",
   )
   .is(
     () => lastName.startsWith("A"),
-    () => "Last name starts with A"
+    () => "Last name starts with A",
   )
   .otherwise("Your name doesn't start with As");
 

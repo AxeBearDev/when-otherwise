@@ -1,9 +1,18 @@
 pre-push:
   jobs:
-    - name: build ./dist
-      run: npm run build
+    - name: check prettier
+      run: npx prettier ./src --check
 
 pre-commit:
   jobs:
     - name: prettier
       run: npx prettier {staged_files} --write
+      stage_fixed: true
+      glob:
+        - "*.ts"
+        - "*.js"
+        - "*.json"
+        - "*.md"
+
+    - name: build ./dist
+      run: npm run build

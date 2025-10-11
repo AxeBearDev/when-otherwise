@@ -72,35 +72,35 @@ export class Comparison<ResultType> {
 
   isLike(
     comparison: any,
-    result: ComparisonResult<ResultType>
+    result: ComparisonResult<ResultType>,
   ): Comparison<ResultType> {
     return this.#compare(comparison, result, false, false);
   }
 
   is(
     comparison: any,
-    result: ComparisonResult<ResultType>
+    result: ComparisonResult<ResultType>,
   ): Comparison<ResultType> {
     return this.#compare(comparison, result, true, false);
   }
 
   isNot(
     comparison: any,
-    result: ComparisonResult<ResultType>
+    result: ComparisonResult<ResultType>,
   ): Comparison<ResultType> {
     return this.#compare(comparison, result, false, true);
   }
 
   isNotLike(
     comparison: any,
-    result: ComparisonResult<ResultType>
+    result: ComparisonResult<ResultType>,
   ): Comparison<ResultType> {
     return this.#compare(comparison, result, false, true);
   }
 
   whenTrue(
     evaluation: ComparisonResult<boolean>,
-    result: ComparisonResult<ResultType>
+    result: ComparisonResult<ResultType>,
   ): Comparison<ResultType> {
     const passes = (value: any) => this.#getValue(evaluation, value) === true;
     this.tests.push({ passes, result });
@@ -109,7 +109,7 @@ export class Comparison<ResultType> {
 
   whenFalse(
     evaluation: ComparisonResult<boolean>,
-    result: ComparisonResult<ResultType>
+    result: ComparisonResult<ResultType>,
   ): Comparison<ResultType> {
     const passes = (value: any) => this.#getValue(evaluation, value) === false;
     this.tests.push({ passes, result });
@@ -135,7 +135,7 @@ export class Comparison<ResultType> {
     comparison: any,
     result: ComparisonResult<ResultType>,
     strict = false,
-    negate = false
+    negate = false,
   ): Comparison<ResultType> {
     const passes = (value: any) => {
       const comparisonValue = this.#getValue(comparison, value);

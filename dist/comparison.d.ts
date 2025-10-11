@@ -1,8 +1,9 @@
-export type ComparisonResult<T> = T | (() => T);
-export interface ComparisonTest<ResultType> {
-    passes: (value: any) => boolean;
-    result: ComparisonResult<ResultType>;
-}
+/**
+ * The type of result that can be returned from a comparison test.
+ * This can be a direct value of type T or a function that takes
+ * the value being compared and returns a value of type T.
+ */
+export type ComparisonResult<T> = T | ((value: any) => T);
 /**
  * A utility for fluent switch statements. This works
  * similarly to PHP's match expression and is useful when you want
@@ -42,36 +43,54 @@ export interface ComparisonTest<ResultType> {
  * const result = test.against(value);
  */
 export declare class Comparison<ResultType> {
-    #private;
-    private tests;
-    private value;
-    private fallback;
-    static when<ResultType>(value: any): Comparison<ResultType>;
-    static whenSomething<ResultType>(): Comparison<ResultType>;
-    private constructor();
-    isLike(comparison: any, result: ComparisonResult<ResultType>): Comparison<ResultType>;
-    is(comparison: any, result: ComparisonResult<ResultType>): Comparison<ResultType>;
-    isNot(comparison: any, result: ComparisonResult<ResultType>): Comparison<ResultType>;
-    isNotLike(comparison: any, result: ComparisonResult<ResultType>): Comparison<ResultType>;
-    whenTrue(evaluation: ComparisonResult<boolean>, result: ComparisonResult<ResultType>): Comparison<ResultType>;
-    whenFalse(evaluation: ComparisonResult<boolean>, result: ComparisonResult<ResultType>): Comparison<ResultType>;
-    /**
-     * Sets the fallback result to be used if no tests pass.
-     * @param result The fallback result.
-     * @returns The current Comparison instance.
-     */
-    default(result: ComparisonResult<ResultType>): Comparison<ResultType>;
-    /**
-     * Kicks off resolution of the Comparison chain if there is a value to compare against.
-     * @param defaultResult
-     * @returns ResultType | Comparison<ResultType>
-     */
-    otherwise(fallback: ComparisonResult<ResultType>): ResultType;
-    /**
-     * Applies the comparison tests against a specific value and
-     * returns the first matching result or the default result.
-     * @param value
-     */
-    against(value: any): ResultType;
+  #private;
+  private tests;
+  private value;
+  private fallback;
+  static when<ResultType>(value: any): Comparison<ResultType>;
+  static whenSomething<ResultType>(): Comparison<ResultType>;
+  private constructor();
+  isLike(
+    comparison: any,
+    result: ComparisonResult<ResultType>,
+  ): Comparison<ResultType>;
+  is(
+    comparison: any,
+    result: ComparisonResult<ResultType>,
+  ): Comparison<ResultType>;
+  isNot(
+    comparison: any,
+    result: ComparisonResult<ResultType>,
+  ): Comparison<ResultType>;
+  isNotLike(
+    comparison: any,
+    result: ComparisonResult<ResultType>,
+  ): Comparison<ResultType>;
+  whenTrue(
+    evaluation: ComparisonResult<boolean>,
+    result: ComparisonResult<ResultType>,
+  ): Comparison<ResultType>;
+  whenFalse(
+    evaluation: ComparisonResult<boolean>,
+    result: ComparisonResult<ResultType>,
+  ): Comparison<ResultType>;
+  /**
+   * Sets the fallback result to be used if no tests pass.
+   * @param result The fallback result.
+   * @returns The current Comparison instance.
+   */
+  defaultTo(result: ComparisonResult<ResultType>): Comparison<ResultType>;
+  /**
+   * Kicks off resolution of the Comparison chain if there is a value to compare against.
+   * @param defaultResult
+   * @returns ResultType | Comparison<ResultType>
+   */
+  otherwise(fallback: ComparisonResult<ResultType>): ResultType;
+  /**
+   * Applies the comparison tests against a specific value and
+   * returns the first matching result or the default result.
+   * @param value
+   */
+  against(value: any): ResultType;
 }
 //# sourceMappingURL=comparison.d.ts.map
