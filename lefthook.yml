@@ -1,0 +1,9 @@
+pre-push:
+  jobs:
+    - name: build ./dist
+      run: npm run build
+
+pre-commit:
+  jobs:
+    - name: prettier
+      run: npx prettier {staged_files} --write
