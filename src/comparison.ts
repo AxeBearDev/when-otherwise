@@ -1,0 +1,184 @@
+export type ComparisonResult<T> = T | (() => T);
+
+export interface ComparisonTest<ResultType> {
+  passes: (value: any) => boolean;
+  result: ComparisonResult<ResultType>;
+}
+
+/**
+ * A utility for fluent switch statements. This works
+ * similarly to PHP's match expression and is useful when you want
+ * to use a ternary operator but have multiple conditions to check.
+ *
+ * Calling `otherwise` kicks off evaluation of the Comparison chain.
+ *
+ * Example usage:
+ *
+ * const result = when(value)
+ *   .is('a', () => 'Value is a')
+ *   .is('2', () => 'Value is the string "2"')
+ *   .is(2, 'Value is the number 2')
+ *   .isLike('1', () => 'Value is loosely the string "1"')
+ *   .is('b', 'Value is b')
+ *   .whenTrue(count === 2, 'Count is exactly 2')
+ *   .whenFalse(isValid, () => 'Value is not valid')
+ *   .otherwise(() => 'Value is something else');
+ *
+ * or
+ *
+ * const result = when()
+ *   .is(value === 'a', () => 'Value is a')
+ *   .is(otherValue === 'b', 'Other value is b')
+ *   .isNot(something, 'Something is not true')
+ *   .otherwise('Value is something else');
+ *
+ * or you can save the comparison for resolving later:
+ *
+ * const test = whenSomething()
+ *   .is(value === 'a', () => 'Value is a')
+ *   .is(otherValue === 'b', 'Other value is b')
+ *   .isNot(something, 'Something is not true')
+ *   .default('Value is something else');
+ *
+ * // later on...
+ * const result = test.against(value);
+ */
+export class Comparison<ResultType> {
+  private tests: ComparisonTest<ResultType>[] = [];
+  private value: any = undefined;
+  private fallback: ComparisonResult<ResultType> | undefined = undefined;
+
+  static when<ResultType>(value: any): Comparison<ResultType> {
+    return new Comparison<ResultType>(value);
+  }
+
+  static whenSomething<ResultType>(): Comparison<ResultType> {
+    return new Comparison<ResultType>();
+  }
+
+  private constructor(value?: any) {
+    if (value !== undefined) {
+      this.value = value;
+    }
+  }
+
+  isLike(
+    comparison: any,
+    result: ComparisonResult<ResultType>
+  ): Comparison<ResultType> {
+    return this.#compare(comparison, result, false, false);
+  }
+
+  is(
+    comparison: any,
+    result: ComparisonResult<ResultType>
+  ): Comparison<ResultType> {
+    return this.#compare(comparison, result, true, false);
+  }
+
+  isNot(
+    comparison: any,
+    result: ComparisonResult<ResultType>
+  ): Comparison<ResultType> {
+    return this.#compare(comparison, result, false, true);
+  }
+
+  isNotLike(
+    comparison: any,
+    result: ComparisonResult<ResultType>
+  ): Comparison<ResultType> {
+    return this.#compare(comparison, result, false, true);
+  }
+
+  whenTrue(
+    evaluation: ComparisonResult<boolean>,
+    result: ComparisonResult<ResultType>
+  ): Comparison<ResultType> {
+    const passes = (_value: any) => this.#getValue(evaluation) === true;
+    this.tests.push({ passes, result });
+    return this;
+  }
+
+  whenFalse(
+    evaluation: ComparisonResult<boolean>,
+    result: ComparisonResult<ResultType>
+  ): Comparison<ResultType> {
+    const passes = (_value: any) => this.#getValue(evaluation) === false;
+    this.tests.push({ passes, result });
+    return this;
+  }
+
+  #getValue(val: any): any {
+    if (typeof val === "function") {
+      return val();
+    }
+    return val;
+  }
+
+  /**
+   * Adds a comparison to the test chain
+   * @param comparison
+   * @param result
+   * @param strict
+   * @param negate
+   * @returns
+   */
+  #compare(
+    comparison: any,
+    result: ComparisonResult<ResultType>,
+    strict = false,
+    negate = false
+  ): Comparison<ResultType> {
+    const passes = (value: any) => {
+      const comparisonValue = this.#getValue(comparison);
+      const isTrue = strict
+        ? comparisonValue === value
+        : comparisonValue == value;
+      return (isTrue && !negate) || (!isTrue && negate);
+    };
+
+    this.tests.push({ passes, result });
+
+    return this;
+  }
+
+  /**
+   * Sets the fallback result to be used if no tests pass.
+   * @param result The fallback result.
+   * @returns The current Comparison instance.
+   */
+  default(result: ComparisonResult<ResultType>): Comparison<ResultType> {
+    this.fallback = result;
+    return this;
+  }
+
+  /**
+   * Kicks off resolution of the Comparison chain if there is a value to compare against.
+   * @param defaultResult
+   * @returns ResultType | Comparison<ResultType>
+   */
+  otherwise(fallback: ComparisonResult<ResultType>): ResultType {
+    this.fallback = fallback;
+
+    return this.against(this.value);
+  }
+
+  /**
+   * Applies the comparison tests against a specific value and
+   * returns the first matching result or the default result.
+   * @param value
+   */
+  against(value: any): ResultType {
+    if (value === undefined) {
+      throw new Error("Cannot compare against an undefined value");
+    }
+
+    for (const test of this.tests) {
+      if (test.passes(value)) {
+        return this.#getValue(test.result);
+      }
+    }
+
+    return this.#getValue(this.fallback);
+  }
+}
