@@ -1,7 +1,7 @@
 {
   "name": "when-otherwise",
   "version": "1.0.0",
-  "description": "Provides a fluent API for comparison logic in TypeScript.",
+  "description": "Fluently compare values in TypeScript and replace complex switch and if/else statements.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
