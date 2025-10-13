@@ -3,7 +3,16 @@
  * This can be a direct value of type T or a function that takes
  * the value being compared and returns a value of type T.
  */
-export type ComparisonResult<T> = T | ((value: any) => T);
+export type ComparisonResult<InputType, ResultType> =
+  | ResultType
+  | ((value: InputType) => ResultType);
+/**
+ * Represents a single comparison test within a Comparison chain.
+ */
+export interface ComparisonTest<InputType, ResultType> {
+  passes: (value: InputType) => boolean;
+  result: ComparisonResult<InputType, ResultType>;
+}
 /**
  * A utility for fluent switch statements. This works
  * similarly to PHP's match expression and is useful when you want
@@ -42,55 +51,72 @@ export type ComparisonResult<T> = T | ((value: any) => T);
  * // later on...
  * const result = test.against(value);
  */
-export declare class Comparison<ResultType> {
-  #private;
-  private tests;
-  private value;
-  private fallback;
-  static when<ResultType>(value: any): Comparison<ResultType>;
-  static whenSomething<ResultType>(): Comparison<ResultType>;
-  private constructor();
+export declare class Comparison<InputType extends any, ResultType extends any> {
+  protected tests: ComparisonTest<InputType, ResultType>[];
+  protected value: InputType | undefined;
+  protected fallback: ComparisonResult<InputType, ResultType> | undefined;
+  static when<InputType, ResultType>(
+    value: InputType,
+  ): Comparison<InputType, ResultType>;
+  static whenSomething<InputType, ResultType>(): Comparison<
+    InputType,
+    ResultType
+  >;
+  protected constructor(value?: InputType);
   isLike(
     comparison: any,
-    result: ComparisonResult<ResultType>,
-  ): Comparison<ResultType>;
+    result: ComparisonResult<InputType, ResultType>,
+  ): Comparison<InputType, ResultType>;
   is(
     comparison: any,
-    result: ComparisonResult<ResultType>,
-  ): Comparison<ResultType>;
+    result: ComparisonResult<InputType, ResultType>,
+  ): Comparison<InputType, ResultType>;
   isNot(
     comparison: any,
-    result: ComparisonResult<ResultType>,
-  ): Comparison<ResultType>;
+    result: ComparisonResult<InputType, ResultType>,
+  ): Comparison<InputType, ResultType>;
   isNotLike(
     comparison: any,
-    result: ComparisonResult<ResultType>,
-  ): Comparison<ResultType>;
-  whenTrue(
-    evaluation: ComparisonResult<boolean>,
-    result: ComparisonResult<ResultType>,
-  ): Comparison<ResultType>;
-  whenFalse(
-    evaluation: ComparisonResult<boolean>,
-    result: ComparisonResult<ResultType>,
-  ): Comparison<ResultType>;
+    result: ComparisonResult<InputType, ResultType>,
+  ): Comparison<InputType, ResultType>;
+  elseWhen(
+    passes: (value: InputType) => boolean,
+    result: ComparisonResult<InputType, ResultType>,
+  ): Comparison<InputType, ResultType>;
   /**
    * Sets the fallback result to be used if no tests pass.
    * @param result The fallback result.
    * @returns The current Comparison instance.
    */
-  defaultTo(result: ComparisonResult<ResultType>): Comparison<ResultType>;
+  defaultTo(
+    result: ComparisonResult<InputType, ResultType>,
+  ): Comparison<InputType, ResultType>;
   /**
    * Kicks off resolution of the Comparison chain if there is a value to compare against.
    * @param defaultResult
    * @returns ResultType | Comparison<ResultType>
    */
-  otherwise(fallback: ComparisonResult<ResultType>): ResultType;
+  otherwise(fallback: ComparisonResult<InputType, ResultType>): ResultType;
   /**
    * Applies the comparison tests against a specific value and
    * returns the first matching result or the default result.
    * @param value
    */
-  against(value: any): ResultType;
+  against(value: InputType): ResultType;
+  protected getValue(result: any, value: InputType): any;
+  /**
+   * Adds a comparison to the test chain
+   * @param comparison
+   * @param result
+   * @param strict
+   * @param negate
+   * @returns
+   */
+  protected compare(
+    comparison: any,
+    result: ComparisonResult<InputType, ResultType>,
+    strict?: boolean,
+    negate?: boolean,
+  ): Comparison<InputType, ResultType>;
 }
 //# sourceMappingURL=comparison.d.ts.map

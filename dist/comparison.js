@@ -1,25 +1,3 @@
-var __classPrivateFieldGet =
-  (this && this.__classPrivateFieldGet) ||
-  function (receiver, state, kind, f) {
-    if (kind === "a" && !f)
-      throw new TypeError("Private accessor was defined without a getter");
-    if (
-      typeof state === "function"
-        ? receiver !== state || !f
-        : !state.has(receiver)
-    )
-      throw new TypeError(
-        "Cannot read private member from an object whose class did not declare it",
-      );
-    return kind === "m"
-      ? f
-      : kind === "a"
-        ? f.call(receiver)
-        : f
-          ? f.value
-          : state.get(receiver);
-  };
-var _Comparison_instances, _Comparison_getValue, _Comparison_compare;
 /**
  * A utility for fluent switch statements. This works
  * similarly to PHP's match expression and is useful when you want
@@ -66,7 +44,6 @@ export class Comparison {
     return new Comparison();
   }
   constructor(value) {
-    _Comparison_instances.add(this);
     this.tests = [];
     this.value = undefined;
     this.fallback = undefined;
@@ -75,56 +52,18 @@ export class Comparison {
     }
   }
   isLike(comparison, result) {
-    return __classPrivateFieldGet(
-      this,
-      _Comparison_instances,
-      "m",
-      _Comparison_compare,
-    ).call(this, comparison, result, false, false);
+    return this.compare(comparison, result, false, false);
   }
   is(comparison, result) {
-    return __classPrivateFieldGet(
-      this,
-      _Comparison_instances,
-      "m",
-      _Comparison_compare,
-    ).call(this, comparison, result, true, false);
+    return this.compare(comparison, result, true, false);
   }
   isNot(comparison, result) {
-    return __classPrivateFieldGet(
-      this,
-      _Comparison_instances,
-      "m",
-      _Comparison_compare,
-    ).call(this, comparison, result, false, true);
+    return this.compare(comparison, result, false, true);
   }
   isNotLike(comparison, result) {
-    return __classPrivateFieldGet(
-      this,
-      _Comparison_instances,
-      "m",
-      _Comparison_compare,
-    ).call(this, comparison, result, false, true);
+    return this.compare(comparison, result, false, true);
   }
-  whenTrue(evaluation, result) {
-    const passes = (value) =>
-      __classPrivateFieldGet(
-        this,
-        _Comparison_instances,
-        "m",
-        _Comparison_getValue,
-      ).call(this, evaluation, value) === true;
-    this.tests.push({ passes, result });
-    return this;
-  }
-  whenFalse(evaluation, result) {
-    const passes = (value) =>
-      __classPrivateFieldGet(
-        this,
-        _Comparison_instances,
-        "m",
-        _Comparison_getValue,
-      ).call(this, evaluation, value) === false;
+  elseWhen(passes, result) {
     this.tests.push({ passes, result });
     return this;
   }
@@ -144,6 +83,11 @@ export class Comparison {
    */
   otherwise(fallback) {
     this.fallback = fallback;
+    if (this.value === undefined) {
+      throw new Error(
+        "Cannot call otherwise on a Comparison without a value. Use defaultTo() and against() instead.",
+      );
+    }
     return this.against(this.value);
   }
   /**
@@ -157,42 +101,28 @@ export class Comparison {
     }
     for (const test of this.tests) {
       if (test.passes(value)) {
-        return __classPrivateFieldGet(
-          this,
-          _Comparison_instances,
-          "m",
-          _Comparison_getValue,
-        ).call(this, test.result, value);
+        return this.getValue(test.result, value);
       }
     }
-    return __classPrivateFieldGet(
-      this,
-      _Comparison_instances,
-      "m",
-      _Comparison_getValue,
-    ).call(this, this.fallback, value);
+    return this.getValue(this.fallback, value);
   }
-}
-((_Comparison_instances = new WeakSet()),
-  (_Comparison_getValue = function _Comparison_getValue(result, value) {
+  getValue(result, value) {
     if (typeof result === "function") {
       return result(value);
     }
     return result;
-  }),
-  (_Comparison_compare = function _Comparison_compare(
-    comparison,
-    result,
-    strict = false,
-    negate = false,
-  ) {
+  }
+  /**
+   * Adds a comparison to the test chain
+   * @param comparison
+   * @param result
+   * @param strict
+   * @param negate
+   * @returns
+   */
+  compare(comparison, result, strict = false, negate = false) {
     const passes = (value) => {
-      const comparisonValue = __classPrivateFieldGet(
-        this,
-        _Comparison_instances,
-        "m",
-        _Comparison_getValue,
-      ).call(this, comparison, value);
+      const comparisonValue = this.getValue(comparison, value);
       const isTrue = strict
         ? comparisonValue === value
         : comparisonValue == value;
@@ -200,5 +130,6 @@ export class Comparison {
     };
     this.tests.push({ passes, result });
     return this;
-  }));
+  }
+}
 //# sourceMappingURL=comparison.js.map
