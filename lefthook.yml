@@ -7,6 +7,7 @@ pre-commit:
   jobs:
     - name: build ./dist
       run: npm run build
+      stage_fixed: true
 
     - name: prettier
       run: npx prettier {staged_files} --write
