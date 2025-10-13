@@ -69,19 +69,17 @@ test("full chain", () => {
     .is(2, "Value is the number 2")
     .isLike("1", () => 'Value is loosely the string "1"')
     .is("b", "Value is b")
-    .whenTrue(2 === 2, "Count is exactly 2")
-    .whenFalse(false, () => "Value is not valid")
     .otherwise(() => "Value is something else");
 
   expect(result).toBe("Value is the number 2");
 });
 
 test("deferred against", () => {
-  const test = whenSomething<string>()
+  const test = whenSomething<string | number, string>()
     .is("a", () => "Value is a")
     .is("b", "Value is b")
     .is(1, "Something is 1")
-    .defaultTo((value) => "Value is " + value);
+    .defaultTo((value: string | number) => "Value is " + value);
 
   expect(test.against("a")).toBe("Value is a");
   expect(test.against("b")).toBe("Value is b");
@@ -89,36 +87,35 @@ test("deferred against", () => {
   expect(test.against(123)).toBe("Value is 123");
 });
 
+test("elseWhen", () => {
+  expect(
+    when(2)
+      .is(1, false)
+      .elseWhen((value: number) => value % 2 === 0, true)
+      .otherwise(false),
+  ).toBe(true);
+});
+
 test("undefined value", () => {
   expect(() => {
-    whenSomething<string>()
+    whenSomething<string, string>()
       .is("a", () => "Value is a")
       .is("b", "Value is b")
       .otherwise("Value is something else");
-  }).toThrow("Cannot compare against an undefined value");
-});
-
-test("whenTrue with functions", () => {
-  expect(when().whenTrue(trueFunc, trueFunc).otherwise(falseFunc)).toBe(true);
-  expect(when().whenTrue(falseFunc, trueFunc).otherwise(falseFunc)).toBe(false);
-});
-
-test("whenTrue with values", () => {
-  expect(when().whenTrue(true, true).otherwise(false)).toBe(true);
-  expect(when().whenTrue(false, true).otherwise(false)).toBe(false);
-});
-
-test("whenFalse with functions", () => {
-  expect(when().whenFalse(falseFunc, trueFunc).otherwise(falseFunc)).toBe(true);
-  expect(when().whenFalse(trueFunc, trueFunc).otherwise(falseFunc)).toBe(false);
-});
-
-test("whenFalse with values", () => {
-  expect(when().whenFalse(false, true).otherwise(false)).toBe(true);
-  expect(when().whenFalse(true, true).otherwise(false)).toBe(false);
+  }).toThrow(
+    "Cannot call otherwise on a Comparison without a value. Use defaultTo() and against() instead.",
+  );
 });
 
 test("empty constructor uses true", () => {
-  expect(when().is(true, true).otherwise(false)).toBe(true);
-  expect(when().isNot(true, false).otherwise(true)).toBe(true);
+  expect(
+    when()
+      .is(() => 1 === 1, true)
+      .otherwise(false),
+  ).toBe(true);
+  expect(
+    when()
+      .isNot(() => 1 === 1, false)
+      .otherwise(true),
+  ).toBe(true);
 });

@@ -3,14 +3,16 @@
  * This can be a direct value of type T or a function that takes
  * the value being compared and returns a value of type T.
  */
-export type ComparisonResult<T> = T | ((value: any) => T);
+export type ComparisonResult<InputType, ResultType> =
+  | ResultType
+  | ((value: InputType) => ResultType);
 
 /**
  * Represents a single comparison test within a Comparison chain.
  */
-interface ComparisonTest<ResultType> {
-  passes: (value: any) => boolean;
-  result: ComparisonResult<ResultType>;
+export interface ComparisonTest<InputType, ResultType> {
+  passes: (value: InputType) => boolean;
+  result: ComparisonResult<InputType, ResultType>;
 }
 
 /**
@@ -51,20 +53,26 @@ interface ComparisonTest<ResultType> {
  * // later on...
  * const result = test.against(value);
  */
-export class Comparison<ResultType> {
-  private tests: ComparisonTest<ResultType>[] = [];
-  private value: any = undefined;
-  private fallback: ComparisonResult<ResultType> | undefined = undefined;
+export class Comparison<InputType extends any, ResultType extends any> {
+  protected tests: ComparisonTest<InputType, ResultType>[] = [];
+  protected value: InputType | undefined = undefined;
+  protected fallback: ComparisonResult<InputType, ResultType> | undefined =
+    undefined;
 
-  static when<ResultType>(value: any): Comparison<ResultType> {
-    return new Comparison<ResultType>(value);
+  static when<InputType, ResultType>(
+    value: InputType,
+  ): Comparison<InputType, ResultType> {
+    return new Comparison<InputType, ResultType>(value);
   }
 
-  static whenSomething<ResultType>(): Comparison<ResultType> {
-    return new Comparison<ResultType>();
+  static whenSomething<InputType, ResultType>(): Comparison<
+    InputType,
+    ResultType
+  > {
+    return new Comparison<InputType, ResultType>();
   }
 
-  private constructor(value?: any) {
+  protected constructor(value?: InputType) {
     if (value !== undefined) {
       this.value = value;
     }
@@ -72,51 +80,89 @@ export class Comparison<ResultType> {
 
   isLike(
     comparison: any,
-    result: ComparisonResult<ResultType>,
-  ): Comparison<ResultType> {
-    return this.#compare(comparison, result, false, false);
+    result: ComparisonResult<InputType, ResultType>,
+  ): Comparison<InputType, ResultType> {
+    return this.compare(comparison, result, false, false);
   }
 
   is(
     comparison: any,
-    result: ComparisonResult<ResultType>,
-  ): Comparison<ResultType> {
-    return this.#compare(comparison, result, true, false);
+    result: ComparisonResult<InputType, ResultType>,
+  ): Comparison<InputType, ResultType> {
+    return this.compare(comparison, result, true, false);
   }
 
   isNot(
     comparison: any,
-    result: ComparisonResult<ResultType>,
-  ): Comparison<ResultType> {
-    return this.#compare(comparison, result, false, true);
+    result: ComparisonResult<InputType, ResultType>,
+  ): Comparison<InputType, ResultType> {
+    return this.compare(comparison, result, false, true);
   }
 
   isNotLike(
     comparison: any,
-    result: ComparisonResult<ResultType>,
-  ): Comparison<ResultType> {
-    return this.#compare(comparison, result, false, true);
+    result: ComparisonResult<InputType, ResultType>,
+  ): Comparison<InputType, ResultType> {
+    return this.compare(comparison, result, false, true);
   }
 
-  whenTrue(
-    evaluation: ComparisonResult<boolean>,
-    result: ComparisonResult<ResultType>,
-  ): Comparison<ResultType> {
-    const passes = (value: any) => this.#getValue(evaluation, value) === true;
+  elseWhen(
+    passes: (value: InputType) => boolean,
+    result: ComparisonResult<InputType, ResultType>,
+  ): Comparison<InputType, ResultType> {
     this.tests.push({ passes, result });
     return this;
   }
 
-  whenFalse(
-    evaluation: ComparisonResult<boolean>,
-    result: ComparisonResult<ResultType>,
-  ): Comparison<ResultType> {
-    const passes = (value: any) => this.#getValue(evaluation, value) === false;
-    this.tests.push({ passes, result });
+  /**
+   * Sets the fallback result to be used if no tests pass.
+   * @param result The fallback result.
+   * @returns The current Comparison instance.
+   */
+  defaultTo(
+    result: ComparisonResult<InputType, ResultType>,
+  ): Comparison<InputType, ResultType> {
+    this.fallback = result;
     return this;
   }
 
-  #getValue(result: any, value: any): any {
+  /**
+   * Kicks off resolution of the Comparison chain if there is a value to compare against.
+   * @param defaultResult
+   * @returns ResultType | Comparison<ResultType>
+   */
+  otherwise(fallback: ComparisonResult<InputType, ResultType>): ResultType {
+    this.fallback = fallback;
+
+    if (this.value === undefined) {
+      throw new Error(
+        "Cannot call otherwise on a Comparison without a value. Use defaultTo() and against() instead.",
+      );
+    }
+
+    return this.against(this.value);
+  }
+
+  /**
+   * Applies the comparison tests against a specific value and
+   * returns the first matching result or the default result.
+   * @param value
+   */
+  against(value: InputType): ResultType {
+    if (value === undefined) {
+      throw new Error("Cannot compare against an undefined value");
+    }
+
+    for (const test of this.tests) {
+      if (test.passes(value)) {
+        return this.getValue(test.result, value);
+      }
+    }
+
+    return this.getValue(this.fallback, value);
+  }
+
+  protected getValue(result: any, value: InputType): any {
     if (typeof result === "function") {
       return result(value);
     }
@@ -131,14 +177,14 @@ export class Comparison<ResultType> {
    * @param negate
    * @returns
    */
-  #compare(
+  protected compare(
     comparison: any,
-    result: ComparisonResult<ResultType>,
+    result: ComparisonResult<InputType, ResultType>,
     strict = false,
     negate = false,
-  ): Comparison<ResultType> {
+  ): Comparison<InputType, ResultType> {
     const passes = (value: any) => {
-      const comparisonValue = this.#getValue(comparison, value);
+      const comparisonValue = this.getValue(comparison, value);
       const isTrue = strict
         ? comparisonValue === value
         : comparisonValue == value;
@@ -148,45 +194,5 @@ export class Comparison<ResultType> {
     this.tests.push({ passes, result });
 
     return this;
-  }
-
-  /**
-   * Sets the fallback result to be used if no tests pass.
-   * @param result The fallback result.
-   * @returns The current Comparison instance.
-   */
-  defaultTo(result: ComparisonResult<ResultType>): Comparison<ResultType> {
-    this.fallback = result;
-    return this;
-  }
-
-  /**
-   * Kicks off resolution of the Comparison chain if there is a value to compare against.
-   * @param defaultResult
-   * @returns ResultType | Comparison<ResultType>
-   */
-  otherwise(fallback: ComparisonResult<ResultType>): ResultType {
-    this.fallback = fallback;
-
-    return this.against(this.value);
-  }
-
-  /**
-   * Applies the comparison tests against a specific value and
-   * returns the first matching result or the default result.
-   * @param value
-   */
-  against(value: any): ResultType {
-    if (value === undefined) {
-      throw new Error("Cannot compare against an undefined value");
-    }
-
-    for (const test of this.tests) {
-      if (test.passes(value)) {
-        return this.#getValue(test.result, value);
-      }
-    }
-
-    return this.#getValue(this.fallback, value);
   }
 }
