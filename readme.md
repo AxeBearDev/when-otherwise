@@ -19,6 +19,10 @@ const result = when(type)
   .is("small", () => this.handleSmall())
   .is("medium", () => this.handleMedium())
   .is("large", () => this.handleLarge())
+  .elseWhen(
+    (value) => value.startsWith("extra"),
+    () => this.handleExtra(),
+  )
   .otherwise(() => this.handleDefault());
 ```
 
@@ -26,16 +30,18 @@ const result = when(type)
 
 Start a comparison with either `when` or `whenSomething`. Use `when` for immediate calculation of the result. `whenSomething` defers calculation so that you may re-use a comparison test across multiple values. Both methods create and return a `Comparison` object. Once you have this object, you can start to chain additional tests.
 
-Note: All of these methods accept either direct values or functions that return values. Functions will receive the compared value as an argument.
+Note: for all of these comparison methods:
+
+- The `comparison` parameter can be a value to compare against or a function that returns a value to compare against. The function will be called with the value being tested when the comparison is executed.
+- The `result` parameter can be a value or a function that returns a value. If it is a function, it will be called with the value being tested when the comparison matches.
 
 ### Comparison Methods
 
-- `is(value, result)`: Checks for strict equality (`===`) between the compared value and the provided value. If they are equal, it returns the associated result.
-- `isLike(value, result)`: Checks for loose equality (`==`) between the compared value and the provided value. If they are loosely equal, it returns the associated result.
-- `isNot(value, result)`: Checks for strict inequality (`!==`) between the compared value and the provided value. If they are not equal, it returns the associated result.
-- `isNotLike(value, result)`: Checks for loose inequality (`!=`) between the compared value and the provided value. If they are not loosely equal, it returns the associated result.
-- `whenTrue(condition, result)`: Evaluates a boolean condition. If the condition is true, it returns the associated result.
-- `whenFalse(condition, result)`: Evaluates a boolean condition. If the condition is false, it returns the associated result.
+- `is(comparison, result)`: Checks for strict equality (`===`) between the compared value and the provided value. If they are equal, it returns the associated result.
+- `isLike(comparison, result)`: Checks for loose equality (`==`) between the compared value and the provided value. If they are loosely equal, it returns the associated result.
+- `isNot(comparison, result)`: Checks for strict inequality (`!==`) between the compared value and the provided value. If they are not equal, it returns the associated result.
+- `isNotLike(comparison, result)`: Checks for loose inequality (`!=`) between the compared value and the provided value. If they are not loosely equal, it returns the associated result.
+- `elseWhen(condition, result)`: Allows you to have more complex comparisons. The `condition` parameter can be either a boolean or a function that accepts the value to test and returns a boolean. If the condition is true, it returns the associated result.
 
 ### Handling Default Results
 

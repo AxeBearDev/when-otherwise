@@ -7,6 +7,14 @@ export type ComparisonResult<InputType, ResultType> =
   | ResultType
   | ((value: InputType) => ResultType);
 /**
+ * Represents a value to compare against, which can be a direct value
+ * of type ComparisonType or a function that takes the value being
+ * compared and returns a value of type ComparisonType.
+ */
+export type ComparisonValue<InputType, ComparisonType> =
+  | ComparisonType
+  | ((value: InputType) => ComparisonType);
+/**
  * Represents a single comparison test within a Comparison chain.
  */
 export interface ComparisonTest<InputType, ResultType> {
@@ -63,24 +71,37 @@ export declare class Comparison<InputType extends any, ResultType extends any> {
     ResultType
   >;
   protected constructor(value?: InputType);
-  isLike(
-    comparison: any,
+  isLike<ComparisonType>(
+    comparison: ComparisonValue<InputType, ComparisonType>,
     result: ComparisonResult<InputType, ResultType>,
   ): Comparison<InputType, ResultType>;
-  is(
-    comparison: any,
+  is<ComparisonType>(
+    comparison: ComparisonValue<InputType, ComparisonType>,
     result: ComparisonResult<InputType, ResultType>,
   ): Comparison<InputType, ResultType>;
-  isNot(
-    comparison: any,
+  isNot<ComparisonType>(
+    comparison: ComparisonValue<InputType, ComparisonType>,
     result: ComparisonResult<InputType, ResultType>,
   ): Comparison<InputType, ResultType>;
-  isNotLike(
-    comparison: any,
+  /**
+   * Tests for non-strict inequality (loosely not equal).
+   *
+   * @param comparison  The value to compare against.
+   * @param result
+   * @returns
+   */
+  isNotLike<ComparisonType>(
+    comparison: ComparisonValue<InputType, ComparisonType>,
     result: ComparisonResult<InputType, ResultType>,
   ): Comparison<InputType, ResultType>;
+  /**
+   * Adds a conditional test that returns its result if the passes function returns true.
+   * @param passes  boolean | (value: InputType) => boolean  The a boolean or function that returns a boolean indicating if the test passes.
+   * @param result The result to return if the test passes.
+   * @returns The current Comparison instance.
+   */
   elseWhen(
-    passes: (value: InputType) => boolean,
+    passes: boolean | ((value: InputType) => boolean),
     result: ComparisonResult<InputType, ResultType>,
   ): Comparison<InputType, ResultType>;
   /**
@@ -103,7 +124,9 @@ export declare class Comparison<InputType extends any, ResultType extends any> {
    * @param value
    */
   against(value: InputType): ResultType;
-  protected getValue(result: any, value: InputType): any;
+  protected toCallable<In, Out>(
+    value: Out | ((input: In) => Out),
+  ): (input: In) => Out;
   /**
    * Adds a comparison to the test chain
    * @param comparison
@@ -112,8 +135,8 @@ export declare class Comparison<InputType extends any, ResultType extends any> {
    * @param negate
    * @returns
    */
-  protected compare(
-    comparison: any,
+  protected compare<ComparisonType>(
+    comparison: ComparisonValue<InputType, ComparisonType>,
     result: ComparisonResult<InputType, ResultType>,
     strict?: boolean,
     negate?: boolean,

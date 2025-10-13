@@ -60,11 +60,24 @@ export class Comparison {
   isNot(comparison, result) {
     return this.compare(comparison, result, false, true);
   }
+  /**
+   * Tests for non-strict inequality (loosely not equal).
+   *
+   * @param comparison  The value to compare against.
+   * @param result
+   * @returns
+   */
   isNotLike(comparison, result) {
     return this.compare(comparison, result, false, true);
   }
+  /**
+   * Adds a conditional test that returns its result if the passes function returns true.
+   * @param passes  boolean | (value: InputType) => boolean  The a boolean or function that returns a boolean indicating if the test passes.
+   * @param result The result to return if the test passes.
+   * @returns The current Comparison instance.
+   */
   elseWhen(passes, result) {
-    this.tests.push({ passes, result });
+    this.tests.push({ passes: this.toCallable(passes), result });
     return this;
   }
   /**
@@ -101,16 +114,19 @@ export class Comparison {
     }
     for (const test of this.tests) {
       if (test.passes(value)) {
-        return this.getValue(test.result, value);
+        return this.toCallable(test.result)(value);
       }
     }
-    return this.getValue(this.fallback, value);
-  }
-  getValue(result, value) {
-    if (typeof result === "function") {
-      return result(value);
+    if (this.fallback === undefined) {
+      throw new Error("No tests matched and no default result was set");
     }
-    return result;
+    return this.toCallable(this.fallback)(value);
+  }
+  toCallable(value) {
+    if (typeof value === "function") {
+      return value;
+    }
+    return (_input) => value;
   }
   /**
    * Adds a comparison to the test chain
@@ -122,7 +138,7 @@ export class Comparison {
    */
   compare(comparison, result, strict = false, negate = false) {
     const passes = (value) => {
-      const comparisonValue = this.getValue(comparison, value);
+      const comparisonValue = this.toCallable(comparison)(value);
       const isTrue = strict
         ? comparisonValue === value
         : comparisonValue == value;

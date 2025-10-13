@@ -94,6 +94,11 @@ test("elseWhen", () => {
       .elseWhen((value: number) => value % 2 === 0, true)
       .otherwise(false),
   ).toBe(true);
+
+  const truth = true;
+  expect(when(3).is(1, false).elseWhen(truth, true).otherwise(false)).toBe(
+    true,
+  );
 });
 
 test("undefined value", () => {
