@@ -74,15 +74,15 @@ export declare class Comparison<InputType extends any, ResultType extends any> {
   isLike<ComparisonType>(
     comparison: ComparisonValue<InputType, ComparisonType>,
     result: ComparisonResult<InputType, ResultType>,
-  ): Comparison<InputType, ResultType>;
+  ): this;
   is<ComparisonType>(
     comparison: ComparisonValue<InputType, ComparisonType>,
     result: ComparisonResult<InputType, ResultType>,
-  ): Comparison<InputType, ResultType>;
+  ): this;
   isNot<ComparisonType>(
     comparison: ComparisonValue<InputType, ComparisonType>,
     result: ComparisonResult<InputType, ResultType>,
-  ): Comparison<InputType, ResultType>;
+  ): this;
   /**
    * Tests for non-strict inequality (loosely not equal).
    *
@@ -93,7 +93,7 @@ export declare class Comparison<InputType extends any, ResultType extends any> {
   isNotLike<ComparisonType>(
     comparison: ComparisonValue<InputType, ComparisonType>,
     result: ComparisonResult<InputType, ResultType>,
-  ): Comparison<InputType, ResultType>;
+  ): this;
   /**
    * Adds a conditional test that returns its result if the passes function returns true.
    * @param passes  boolean | (value: InputType) => boolean  The a boolean or function that returns a boolean indicating if the test passes.
@@ -101,17 +101,15 @@ export declare class Comparison<InputType extends any, ResultType extends any> {
    * @returns The current Comparison instance.
    */
   elseWhen(
-    passes: boolean | ((value: InputType) => boolean),
+    passes: ComparisonValue<InputType, boolean>,
     result: ComparisonResult<InputType, ResultType>,
-  ): Comparison<InputType, ResultType>;
+  ): this;
   /**
    * Sets the fallback result to be used if no tests pass.
    * @param result The fallback result.
    * @returns The current Comparison instance.
    */
-  defaultTo(
-    result: ComparisonResult<InputType, ResultType>,
-  ): Comparison<InputType, ResultType>;
+  defaultTo(result: ComparisonResult<InputType, ResultType>): this;
   /**
    * Kicks off resolution of the Comparison chain if there is a value to compare against.
    * @param defaultResult
@@ -124,8 +122,11 @@ export declare class Comparison<InputType extends any, ResultType extends any> {
    * @param value
    */
   against(value: InputType): ResultType;
+  protected getPassingTest(
+    value: InputType,
+  ): ComparisonTest<InputType, ResultType> | undefined;
   protected toCallable<In, Out>(
-    value: Out | ((input: In) => Out),
+    value: ComparisonValue<In, Out>,
   ): (input: In) => Out;
   /**
    * Adds a comparison to the test chain
@@ -140,6 +141,6 @@ export declare class Comparison<InputType extends any, ResultType extends any> {
     result: ComparisonResult<InputType, ResultType>,
     strict?: boolean,
     negate?: boolean,
-  ): Comparison<InputType, ResultType>;
+  ): this;
 }
 //# sourceMappingURL=comparison.d.ts.map

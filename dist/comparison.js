@@ -112,15 +112,17 @@ export class Comparison {
     if (value === undefined) {
       throw new Error("Cannot compare against an undefined value");
     }
-    for (const test of this.tests) {
-      if (test.passes(value)) {
-        return this.toCallable(test.result)(value);
-      }
+    const passingTest = this.getPassingTest(value);
+    if (passingTest) {
+      return this.toCallable(passingTest.result)(value);
     }
     if (this.fallback === undefined) {
       throw new Error("No tests matched and no default result was set");
     }
     return this.toCallable(this.fallback)(value);
+  }
+  getPassingTest(value) {
+    return this.tests.find((test) => test.passes(value));
   }
   toCallable(value) {
     if (typeof value === "function") {

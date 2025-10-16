@@ -3,6 +3,14 @@ import { when, whenSomething } from "./index.js";
 const trueFunc = () => true;
 const falseFunc = () => false;
 
+test("async result", async () => {
+  const isA = whenSomething<string, Promise<boolean>>()
+    .is("a", async () => true)
+    .defaultTo(async () => false);
+  expect(await isA.against("a")).toBe(true);
+  expect(await isA.against("b")).toBe(false);
+});
+
 test("is with functions", () => {
   expect(
     when("a")

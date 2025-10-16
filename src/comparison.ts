@@ -90,21 +90,21 @@ export class Comparison<InputType extends any, ResultType extends any> {
   isLike<ComparisonType>(
     comparison: ComparisonValue<InputType, ComparisonType>,
     result: ComparisonResult<InputType, ResultType>,
-  ): Comparison<InputType, ResultType> {
+  ): this {
     return this.compare(comparison, result, false, false);
   }
 
   is<ComparisonType>(
     comparison: ComparisonValue<InputType, ComparisonType>,
     result: ComparisonResult<InputType, ResultType>,
-  ): Comparison<InputType, ResultType> {
+  ): this {
     return this.compare(comparison, result, true, false);
   }
 
   isNot<ComparisonType>(
     comparison: ComparisonValue<InputType, ComparisonType>,
     result: ComparisonResult<InputType, ResultType>,
-  ): Comparison<InputType, ResultType> {
+  ): this {
     return this.compare(comparison, result, false, true);
   }
 
@@ -118,7 +118,7 @@ export class Comparison<InputType extends any, ResultType extends any> {
   isNotLike<ComparisonType>(
     comparison: ComparisonValue<InputType, ComparisonType>,
     result: ComparisonResult<InputType, ResultType>,
-  ): Comparison<InputType, ResultType> {
+  ): this {
     return this.compare(comparison, result, false, true);
   }
 
@@ -129,9 +129,9 @@ export class Comparison<InputType extends any, ResultType extends any> {
    * @returns The current Comparison instance.
    */
   elseWhen(
-    passes: boolean | ((value: InputType) => boolean),
+    passes: ComparisonValue<InputType, boolean>,
     result: ComparisonResult<InputType, ResultType>,
-  ): Comparison<InputType, ResultType> {
+  ): this {
     this.tests.push({ passes: this.toCallable(passes), result });
     return this;
   }
@@ -141,9 +141,7 @@ export class Comparison<InputType extends any, ResultType extends any> {
    * @param result The fallback result.
    * @returns The current Comparison instance.
    */
-  defaultTo(
-    result: ComparisonResult<InputType, ResultType>,
-  ): Comparison<InputType, ResultType> {
+  defaultTo(result: ComparisonResult<InputType, ResultType>): this {
     this.fallback = result;
     return this;
   }
@@ -175,10 +173,10 @@ export class Comparison<InputType extends any, ResultType extends any> {
       throw new Error("Cannot compare against an undefined value");
     }
 
-    for (const test of this.tests) {
-      if (test.passes(value)) {
-        return this.toCallable(test.result)(value);
-      }
+    const passingTest = this.getPassingTest(value);
+
+    if (passingTest) {
+      return this.toCallable(passingTest.result)(value);
     }
 
     if (this.fallback === undefined) {
@@ -188,8 +186,12 @@ export class Comparison<InputType extends any, ResultType extends any> {
     return this.toCallable(this.fallback)(value);
   }
 
+  protected getPassingTest(value: InputType) {
+    return this.tests.find((test) => test.passes(value));
+  }
+
   protected toCallable<In, Out>(
-    value: Out | ((input: In) => Out),
+    value: ComparisonValue<In, Out>,
   ): (input: In) => Out {
     if (typeof value === "function") {
       return value as (input: In) => Out;
@@ -210,7 +212,7 @@ export class Comparison<InputType extends any, ResultType extends any> {
     result: ComparisonResult<InputType, ResultType>,
     strict = false,
     negate = false,
-  ): Comparison<InputType, ResultType> {
+  ): this {
     const passes = (value: any) => {
       const comparisonValue = this.toCallable(comparison)(value);
       const isTrue = strict
