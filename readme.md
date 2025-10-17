@@ -1,13 +1,21 @@
 # when-otherwise
 
-when-otherwise is a small TypeScript library that provides a fluent API for comparison logic. It is designed to simplify complex conditional statements by allowing you to chain multiple comparisons together in a readable manner.
+when-otherwise is a small TypeScript library that provides a fluent API for comparison logic. It is designed to simplify complex conditional statements by allowing you to chain multiple comparisons together in a readable manner. You can re-use the same comparison logic across multiple values, and it supports both synchronous and asynchronous operations.
 
 ## Installation
 
-You can install the library via npm:
+You can install the library with your favorite package manager:
 
-```
+```bash
 npm install @axebear/when-otherwise
+```
+
+```bash
+yarn add @axebear/when-otherwise
+```
+
+```bash
+bun add @axebear/when-otherwise
 ```
 
 Test the installation with `npm test`.
@@ -96,7 +104,7 @@ console.log(result); // Output: "Value is A"
 ```typescript
 import { whenSomething } from "@axebear/when-otherwise";
 
-const test = whenSomething<string>()
+const test = whenSomething<string | number, string>()
   .is("a", () => "Value is A")
   .is("b", "Value is B")
   .is(1, "Something is 1")
