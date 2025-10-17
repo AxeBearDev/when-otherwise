@@ -3,12 +3,40 @@ import { when, whenSomething } from "./index.js";
 const trueFunc = () => true;
 const falseFunc = () => false;
 
-test("async result", async () => {
-  const isA = whenSomething<string, Promise<boolean>>()
-    .is("a", async () => true)
-    .defaultTo(async () => false);
-  expect(await isA.against("a")).toBe(true);
-  expect(await isA.against("b")).toBe(false);
+test("async value", async () => {
+  const isA = when<Promise<string>, boolean>(Promise.resolve("a"))
+    .withPromises()
+    .is("a", true)
+    .otherwise(false);
+  expect(await isA).toBe(true);
+});
+
+test("deferred async result", async () => {
+  const isA = whenSomething<string, Promise<string>>()
+    .withPromises()
+    .is("a", async () => "value is a")
+    .is("b", async () => "value is b")
+    .defaultTo(async () => "value is something else");
+  expect(await isA.against("a")).toBe("value is a");
+  expect(await isA.against("b")).toBe("value is b");
+  expect(await isA.against("c")).toBe("value is something else");
+});
+
+test("deferred async comparison", async () => {
+  const isA = whenSomething<string, string>()
+    .withPromises()
+    .is(async () => "x", "value is x")
+    .is(async () => "y", "value is y")
+    .defaultTo(() => "value is something else");
+
+  const withA = await isA.against("x");
+  expect(withA).toBe("value is x");
+
+  const withB = await isA.against("y");
+  expect(withB).toBe("value is y");
+
+  const withC = await isA.against("z");
+  expect(withC).toBe("value is something else");
 });
 
 test("is with functions", () => {
@@ -115,9 +143,7 @@ test("undefined value", () => {
       .is("a", () => "Value is a")
       .is("b", "Value is b")
       .otherwise("Value is something else");
-  }).toThrow(
-    "Cannot call otherwise on a Comparison without a value. Use defaultTo() and against() instead.",
-  );
+  }).toThrow("Cannot compare against an undefined value");
 });
 
 test("empty constructor uses true", () => {

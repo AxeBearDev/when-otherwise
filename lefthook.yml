@@ -13,7 +13,7 @@ pre-commit:
       run: npx prettier {staged_files} --write
       stage_fixed: true
       glob:
-        - "*.ts"
-        - "*.js"
+        - "src/*.ts"
+        - "src/*.js"
         - "*.json"
         - "*.md"

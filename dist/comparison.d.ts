@@ -3,23 +3,24 @@
  * This can be a direct value of type T or a function that takes
  * the value being compared and returns a value of type T.
  */
-export type ComparisonResult<InputType, ResultType> =
-  | ResultType
-  | ((value: InputType) => ResultType);
+export type ComparisonResult<InputType, ResultType> = ResultType | ((value: InputType) => ResultType);
 /**
  * Represents a value to compare against, which can be a direct value
  * of type ComparisonType or a function that takes the value being
  * compared and returns a value of type ComparisonType.
  */
-export type ComparisonValue<InputType, ComparisonType> =
-  | ComparisonType
-  | ((value: InputType) => ComparisonType);
+export type ComparisonValue<InputType, ComparisonType> = ComparisonType | ((value: InputType) => ComparisonType) | ((value: InputType) => Promise<ComparisonType>);
+/**
+ * Represents a value that can be compared against. If it's a function,
+ * it will be called to get the actual value.
+ */
+export type ComparableType<T> = T | (() => T);
 /**
  * Represents a single comparison test within a Comparison chain.
  */
 export interface ComparisonTest<InputType, ResultType> {
-  passes: (value: InputType) => boolean;
-  result: ComparisonResult<InputType, ResultType>;
+    passes: (value: InputType) => boolean | Promise<boolean>;
+    result: (value: InputType) => ResultType | Promise<ResultType>;
 }
 /**
  * A utility for fluent switch statements. This works
@@ -60,87 +61,63 @@ export interface ComparisonTest<InputType, ResultType> {
  * const result = test.against(value);
  */
 export declare class Comparison<InputType extends any, ResultType extends any> {
-  protected tests: ComparisonTest<InputType, ResultType>[];
-  protected value: InputType | undefined;
-  protected fallback: ComparisonResult<InputType, ResultType> | undefined;
-  static when<InputType, ResultType>(
-    value: InputType,
-  ): Comparison<InputType, ResultType>;
-  static whenSomething<InputType, ResultType>(): Comparison<
-    InputType,
-    ResultType
-  >;
-  protected constructor(value?: InputType);
-  isLike<ComparisonType>(
-    comparison: ComparisonValue<InputType, ComparisonType>,
-    result: ComparisonResult<InputType, ResultType>,
-  ): this;
-  is<ComparisonType>(
-    comparison: ComparisonValue<InputType, ComparisonType>,
-    result: ComparisonResult<InputType, ResultType>,
-  ): this;
-  isNot<ComparisonType>(
-    comparison: ComparisonValue<InputType, ComparisonType>,
-    result: ComparisonResult<InputType, ResultType>,
-  ): this;
-  /**
-   * Tests for non-strict inequality (loosely not equal).
-   *
-   * @param comparison  The value to compare against.
-   * @param result
-   * @returns
-   */
-  isNotLike<ComparisonType>(
-    comparison: ComparisonValue<InputType, ComparisonType>,
-    result: ComparisonResult<InputType, ResultType>,
-  ): this;
-  /**
-   * Adds a conditional test that returns its result if the passes function returns true.
-   * @param passes  boolean | (value: InputType) => boolean  The a boolean or function that returns a boolean indicating if the test passes.
-   * @param result The result to return if the test passes.
-   * @returns The current Comparison instance.
-   */
-  elseWhen(
-    passes: ComparisonValue<InputType, boolean>,
-    result: ComparisonResult<InputType, ResultType>,
-  ): this;
-  /**
-   * Sets the fallback result to be used if no tests pass.
-   * @param result The fallback result.
-   * @returns The current Comparison instance.
-   */
-  defaultTo(result: ComparisonResult<InputType, ResultType>): this;
-  /**
-   * Kicks off resolution of the Comparison chain if there is a value to compare against.
-   * @param defaultResult
-   * @returns ResultType | Comparison<ResultType>
-   */
-  otherwise(fallback: ComparisonResult<InputType, ResultType>): ResultType;
-  /**
-   * Applies the comparison tests against a specific value and
-   * returns the first matching result or the default result.
-   * @param value
-   */
-  against(value: InputType): ResultType;
-  protected getPassingTest(
-    value: InputType,
-  ): ComparisonTest<InputType, ResultType> | undefined;
-  protected toCallable<In, Out>(
-    value: ComparisonValue<In, Out>,
-  ): (input: In) => Out;
-  /**
-   * Adds a comparison to the test chain
-   * @param comparison
-   * @param result
-   * @param strict
-   * @param negate
-   * @returns
-   */
-  protected compare<ComparisonType>(
-    comparison: ComparisonValue<InputType, ComparisonType>,
-    result: ComparisonResult<InputType, ResultType>,
-    strict?: boolean,
-    negate?: boolean,
-  ): this;
+    protected tests: ComparisonTest<InputType, ResultType>[];
+    protected value: ComparableType<InputType> | undefined;
+    protected fallback: ComparisonResult<InputType, ResultType> | undefined;
+    protected hasPromises: boolean;
+    static when<InputType, ResultType>(value: InputType): Comparison<InputType, ResultType>;
+    static whenSomething<InputType, ResultType>(): Comparison<InputType, ResultType>;
+    protected constructor(value?: ComparableType<InputType>);
+    withPromises(): this;
+    isLike<ComparisonType>(comparison: ComparisonValue<InputType, ComparisonType>, result: ComparisonResult<InputType, ResultType>): this;
+    is<ComparisonType>(comparison: ComparisonValue<InputType, ComparisonType>, result: ComparisonResult<InputType, ResultType>): this;
+    isNot<ComparisonType>(comparison: ComparisonValue<InputType, ComparisonType>, result: ComparisonResult<InputType, ResultType>): this;
+    /**
+     * Tests for non-strict inequality (loosely not equal).
+     *
+     * @param comparison  The value to compare against.
+     * @param result
+     * @returns
+     */
+    isNotLike<ComparisonType>(comparison: ComparisonValue<InputType, ComparisonType>, result: ComparisonResult<InputType, ResultType>): this;
+    /**
+     * Adds a conditional test that returns its result if the passes function returns true.
+     * @param passes  boolean | (value: InputType) => boolean  The a boolean or function that returns a boolean indicating if the test passes.
+     * @param result The result to return if the test passes.
+     * @returns The current Comparison instance.
+     */
+    elseWhen(passes: ComparisonValue<InputType, boolean>, result: ComparisonResult<InputType, ResultType>): this;
+    /**
+     * Sets the fallback result to be used if no tests pass.
+     * @param result The fallback result.
+     * @returns The current Comparison instance.
+     */
+    defaultTo(result: ComparisonResult<InputType, ResultType>): this;
+    /**
+     * Kicks off resolution of the Comparison chain if there is a value to compare against.
+     * @param defaultResult
+     * @returns ResultType | Comparison<ResultType>
+     */
+    otherwise(fallback: ComparisonResult<InputType, ResultType>): ResultType | Promise<ResultType>;
+    /**
+     * Applies the comparison tests against a specific value and
+     * returns the first matching result or the default result.
+     * @param value
+     */
+    against(input: ComparableType<InputType> | undefined): ResultType | Promise<ResultType>;
+    protected verify(): [InputType, (value: InputType) => ResultType];
+    protected againstSync(): ResultType;
+    protected againstAsync(): Promise<ResultType>;
+    protected valueFromPromise<T>(value: T | Promise<T>): Promise<T>;
+    protected toCallable<In, Out>(value: ComparisonValue<In, Out>): (input: In) => Out;
+    /**
+     * Adds a comparison to the test chain
+     * @param comparison
+     * @param result
+     * @param strict
+     * @param negate
+     * @returns
+     */
+    protected compare<ComparisonType>(comparison: ComparisonValue<InputType, ComparisonType>, result: ComparisonResult<InputType, ResultType>, strict?: boolean, negate?: boolean): this;
 }
 //# sourceMappingURL=comparison.d.ts.map

@@ -14,14 +14,21 @@ export type ComparisonResult<InputType, ResultType> =
  */
 export type ComparisonValue<InputType, ComparisonType> =
   | ComparisonType
-  | ((value: InputType) => ComparisonType);
+  | ((value: InputType) => ComparisonType)
+  | ((value: InputType) => Promise<ComparisonType>);
+
+/**
+ * Represents a value that can be compared against. If it's a function,
+ * it will be called to get the actual value.
+ */
+export type ComparableType<T> = T | (() => T);
 
 /**
  * Represents a single comparison test within a Comparison chain.
  */
 export interface ComparisonTest<InputType, ResultType> {
-  passes: (value: InputType) => boolean;
-  result: ComparisonResult<InputType, ResultType>;
+  passes: (value: InputType) => boolean | Promise<boolean>;
+  result: (value: InputType) => ResultType | Promise<ResultType>;
 }
 
 /**
@@ -64,9 +71,10 @@ export interface ComparisonTest<InputType, ResultType> {
  */
 export class Comparison<InputType extends any, ResultType extends any> {
   protected tests: ComparisonTest<InputType, ResultType>[] = [];
-  protected value: InputType | undefined = undefined;
+  protected value: ComparableType<InputType> | undefined = undefined;
   protected fallback: ComparisonResult<InputType, ResultType> | undefined =
     undefined;
+  protected hasPromises = false;
 
   static when<InputType, ResultType>(
     value: InputType,
@@ -81,10 +89,15 @@ export class Comparison<InputType extends any, ResultType extends any> {
     return new Comparison<InputType, ResultType>();
   }
 
-  protected constructor(value?: InputType) {
+  protected constructor(value?: ComparableType<InputType>) {
     if (value !== undefined) {
       this.value = value;
     }
+  }
+
+  withPromises(): this {
+    this.hasPromises = true;
+    return this;
   }
 
   isLike<ComparisonType>(
@@ -132,7 +145,10 @@ export class Comparison<InputType extends any, ResultType extends any> {
     passes: ComparisonValue<InputType, boolean>,
     result: ComparisonResult<InputType, ResultType>,
   ): this {
-    this.tests.push({ passes: this.toCallable(passes), result });
+    this.tests.push({
+      passes: this.toCallable(passes),
+      result: this.toCallable(result),
+    });
     return this;
   }
 
@@ -151,15 +167,10 @@ export class Comparison<InputType extends any, ResultType extends any> {
    * @param defaultResult
    * @returns ResultType | Comparison<ResultType>
    */
-  otherwise(fallback: ComparisonResult<InputType, ResultType>): ResultType {
+  otherwise(
+    fallback: ComparisonResult<InputType, ResultType>,
+  ): ResultType | Promise<ResultType> {
     this.fallback = fallback;
-
-    if (this.value === undefined) {
-      throw new Error(
-        "Cannot call otherwise on a Comparison without a value. Use defaultTo() and against() instead.",
-      );
-    }
-
     return this.against(this.value);
   }
 
@@ -168,26 +179,58 @@ export class Comparison<InputType extends any, ResultType extends any> {
    * returns the first matching result or the default result.
    * @param value
    */
-  against(value: InputType): ResultType {
-    if (value === undefined) {
+  against(
+    input: ComparableType<InputType> | undefined,
+  ): ResultType | Promise<ResultType> {
+    this.value = input;
+    return this.hasPromises ? this.againstAsync() : this.againstSync();
+  }
+
+  protected verify(): [InputType, (value: InputType) => ResultType] {
+    if (this.value === undefined) {
       throw new Error("Cannot compare against an undefined value");
-    }
-
-    const passingTest = this.getPassingTest(value);
-
-    if (passingTest) {
-      return this.toCallable(passingTest.result)(value);
     }
 
     if (this.fallback === undefined) {
       throw new Error("No tests matched and no default result was set");
     }
 
-    return this.toCallable(this.fallback)(value);
+    const value = this.value instanceof Function ? this.value() : this.value;
+
+    return [value, this.toCallable(this.fallback)];
   }
 
-  protected getPassingTest(value: InputType) {
-    return this.tests.find((test) => test.passes(value));
+  protected againstSync(): ResultType {
+    const [value, getFallback] = this.verify();
+
+    for (const test of this.tests) {
+      if (test.passes(value)) {
+        return test.result(value) as ResultType;
+      }
+    }
+
+    return getFallback(value) as ResultType;
+  }
+
+  protected async againstAsync(): Promise<ResultType> {
+    const [maybeValue, getFallback] = this.verify();
+
+    const value = await this.valueFromPromise(maybeValue);
+
+    for (const test of this.tests) {
+      const passed = await this.valueFromPromise(test.passes(value));
+
+      if (passed) {
+        const result = await this.valueFromPromise(test.result(value));
+        return result;
+      }
+    }
+
+    return this.valueFromPromise(getFallback(value));
+  }
+
+  protected async valueFromPromise<T>(value: T | Promise<T>): Promise<T> {
+    return value instanceof Promise ? await value : value;
   }
 
   protected toCallable<In, Out>(
@@ -213,15 +256,22 @@ export class Comparison<InputType extends any, ResultType extends any> {
     strict = false,
     negate = false,
   ): this {
-    const passes = (value: any) => {
-      const comparisonValue = this.toCallable(comparison)(value);
+    const compareValue = (value: InputType, comparisonValue: any) => {
       const isTrue = strict
         ? comparisonValue === value
         : comparisonValue == value;
       return (isTrue && !negate) || (!isTrue && negate);
     };
 
-    this.tests.push({ passes, result });
+    const passes = (value: any) => {
+      const comparisonValue = this.toCallable(comparison)(value);
+
+      return comparisonValue instanceof Promise
+        ? comparisonValue.then((resolved) => compareValue(value, resolved))
+        : compareValue(value, comparisonValue);
+    };
+
+    this.tests.push({ passes, result: this.toCallable(result) });
 
     return this;
   }

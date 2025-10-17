@@ -10,6 +10,8 @@ You can install the library via npm:
 npm install @axebear/when-otherwise
 ```
 
+Test the installation with `npm test`.
+
 ## Simple Usage
 
 ```typescript
@@ -104,4 +106,45 @@ console.log(test.against("a")); // Output: "Value is A"
 console.log(test.against("b")); // Output: "Value is B"
 console.log(test.against(1)); // Output: "Something is 1"
 console.log(test.against(123)); // Output: "Value is 123"
+```
+
+### Async Comparisons
+
+If you only need the result type to be asynchronous, you can just specify the return type as a Promise:
+
+```typescript
+import { when } from "@axebear/when-otherwise";
+
+const fetchData = async (id: string) => {
+  return `data-${id}`;
+};
+const result = await when<string, Promise<string>>("1")
+  .is("1", fetchData)
+  .is("2", fetchData)
+  .otherwise("Fetched data is something else");
+console.log(result); // Output: "Fetched data is data-1"
+```
+
+If you need the comparisons themselves to be asynchronous, you need to use the `withPromises()` method. This will ensure that the `otherwise` or `against` methods return a Promise that resolves to the result type.
+
+```typescript
+import { whenSomething } from "@axebear/when-otherwise";
+
+const fetchData = async (id: string) => {
+  return `data-${id}`;
+};
+const test = whenSomething<string, string>()
+  .withPromises()
+  .is(async () => "data-1", "Fetched data is data-1")
+  .is(async () => "data-2", "Fetched data is data-2")
+  .defaultTo("Fetched data is something else");
+
+const result1 = await test.against(await fetchData("1"));
+console.log(result1); // Output: "Fetched data is data-1"
+
+const result2 = await test.against(await fetchData("2"));
+console.log(result2); // Output: "Fetched data is data-2"
+
+const result3 = await test.against(await fetchData("3"));
+console.log(result3); // Output: "Fetched data is something else"
 ```
